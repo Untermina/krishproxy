@@ -1,6 +1,6 @@
 package main
 
-import "krishnak.org/krishproxy/server"
+import "github.com/untermina/krishproxy/server"
 
 func main() {
 	gameServer := server.NewGameServer()
