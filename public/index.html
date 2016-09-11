@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+    <link rel="stylesheet" href="css/xterm.css"/>
+    <style>
+        html,body {height:100%;}
+        body {margin:0;height:100%;}
+        #terminal-container {height:calc(100% - 80px);width:100%;background-color:black;}
+    </style>
+</head>
+<body>
+<h1>Krishnak MUD</h1>
+<div id="terminal-container"></div>
+<script src="js/xterm.js"></script>
+<script src="js/fit.js"></script>
+<script>
+    var terminalContainer = document.getElementById('terminal-container'),
+            term = new Terminal(),
+            socket,
+            buffer = ''
+            echo = true;
+    term.open(terminalContainer);
+    term.fit();
+    term.setCursorStyle(3);
+
+    socket = new WebSocket("ws://krishnak.org/ws");
+    socket.onclose = function(evt) {
+        term.write("Connection closed... Reload page to reconnect.\n")
+    };
+    socket.onmessage = function (evt) {
+        try {
+            var decodedString = atob(evt.data);
+            if (decodedString.indexOf('ÿü') != -1) {
+                echo = true;
+                decodedString = decodedString.replace("ÿü", "");
+            }
+            if (decodedString.indexOf('ÿû') != -1) {
+                echo = false;
+                decodedString = decodedString.replace("ÿû", "");
+            }
+            term.write(decodedString);
+        } catch(e) {
+            console.log(evt.data);
+        }
+    };
+    socket.onopen = function(evt) {
+        term.write("Connected to proxy...");
+    };
+    term.on('data', function(data) {
+        console.log(data, data.charCodeAt(0));
+        if (data === '\n' || data === '\r') {
+            socket.send(buffer + '\r\n');
+            buffer = '';
+            term.write("\r\n");
+        } else if (data.charCodeAt(0) !== 127) {
+            buffer += data;
+            if (echo) {
+                term.write(data);
+            }
+        } else {
+            if (buffer.length > 0) {
+                buffer = buffer.slice(0, -1);
+                term.write("\x08 \x08");
+            }
+        }
+    });
+</script>
+</body>
